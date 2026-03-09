@@ -445,52 +445,35 @@
 const EXCEL_FILE  = 'produtos_ecommerce.xlsx';
 const N8N_WEBHOOK = 'Minha URL';
 
-// Usuários autorizados: { usuario, senha, nome, pedidosFrequentes: [IDs] }
+// Credenciais de acesso por cliente.
+// "sheetName" deve ser EXATAMENTE igual ao nome da aba no Excel.
+// Adicione/remova entradas conforme os clientes da planilha.
 const USERS = [
-  {
-    usuario: 'joao',
-    senha: '1234',
-    nome: 'João Silva',
-    pedidosFrequentes: [1, 3, 6, 11, 14],
-  },
-  {
-    usuario: 'maria',
-    senha: 'abcd',
-    nome: 'Maria Souza',
-    pedidosFrequentes: [2, 4, 15, 19],
-  },
-  {
-    usuario: 'admin',
-    senha: 'nexus',
-    nome: 'Administrador',
-    pedidosFrequentes: [1, 2, 3, 4, 5],
-  },
+  { usuario: 'delicci',   senha: '1234', nome: '++ Delicci',              sheetName: '++ Delicci'                },
+  { usuario: 'natulce',   senha: '1234', nome: '++ Natulce',              sheetName: '++ Natulce'                },
+  { usuario: 'skimil',    senha: '1234', nome: '++ Skimil & Skimoni',     sheetName: '++ Skimil & Skimoni'       },
+  { usuario: 'frutibom',  senha: '1234', nome: 'A C Alves Lopes | Frutibom', sheetName: 'A C Alves Lopes | Frutibom' },
+  // Para adicionar novo cliente, copie uma linha acima e ajuste os campos.
 ];
 
-const EMOJIS = {
-  Computadores:'💻', Celulares:'📱', Áudio:'🎧', TVs:'📺', Câmeras:'📷', Wearables:'⌚',
-  Calçados:'👟', Acessórios:'🎒', Roupas:'👕', Ciclismo:'🚴', Nutrição:'💪',
-  Móveis:'🛋️', Eletrodomésticos:'☕', Decoração:'💡', Tecnologia:'📚',
-  Fragrâncias:'🧴', PS5:'🎮',
-};
-
 // ══════════════════════════════════════════════════════════════
-//  ESTADO
+//  ESTADO GLOBAL
 // ══════════════════════════════════════════════════════════════
 
-let products    = [];
+let workbook    = null;   // workbook XLSX carregado (reutilizado nas duas páginas)
+let products    = [];     // catálogo completo vindo da aba "Matriz DR"
+let frequent    = [];     // pedidos frequentes da aba do cliente logado
 let cart        = [];
 let query       = '';
-let currentUser = null;   // objeto do usuário logado
-let currentPage = 'freq'; // 'freq' | 'catalog'
+let currentUser = null;
 
 // ══════════════════════════════════════════════════════════════
 //  LOGIN / LOGOUT
 // ══════════════════════════════════════════════════════════════
 
 function doLogin() {
-  const u = document.getElementById('loginUser').value.trim().toLowerCase();
-  const p = document.getElementById('loginPass').value;
+  const u    = document.getElementById('loginUser').value.trim().toLowerCase();
+  const p    = document.getElementById('loginPass').value;
   const user = USERS.find(x => x.usuario === u && x.senha === p);
   if (!user) {
     document.getElementById('loginError').textContent = 'Usuário ou senha incorretos.';
@@ -500,15 +483,14 @@ function doLogin() {
   document.getElementById('loginError').textContent = '';
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
-  document.getElementById('userName').textContent = user.nome;
+  document.getElementById('userName').textContent  = user.nome;
   document.getElementById('userAvatar').textContent = user.nome[0].toUpperCase();
-  loadProducts();
+  loadExcel();
 }
 
 function doLogout() {
-  currentUser = null;
-  cart = [];
-  products = [];
+  currentUser = workbook = null;
+  products = frequent = cart = [];
   query = '';
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPass').value = '';
@@ -518,7 +500,6 @@ function doLogout() {
   updateBadge();
 }
 
-// Enter no campo de senha também faz login
 document.getElementById('loginPass').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
 });
@@ -528,49 +509,115 @@ document.getElementById('loginPass').addEventListener('keydown', e => {
 // ══════════════════════════════════════════════════════════════
 
 function goTo(page) {
-  currentPage = page;
-
-  // Ativa nav item
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   document.getElementById(`nav-${page}`).classList.add('active');
-
-  // Mostra a página correta
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
-
-  // Barra de busca só aparece no catálogo
-  document.getElementById('searchWrap').classList.toggle('visible', page === 'catalog');
-  if (page !== 'catalog') {
-    query = '';
-    document.getElementById('search').value = '';
-  }
+  const isSearch = page === 'catalog';
+  document.getElementById('searchWrap').classList.toggle('visible', isSearch);
+  if (!isSearch) { query = ''; document.getElementById('search').value = ''; }
 }
 
 // ══════════════════════════════════════════════════════════════
-//  CARREGAR EXCEL
+//  CARREGAR EXCEL  (uma única requisição, duas abas lidas)
 // ══════════════════════════════════════════════════════════════
 
-async function loadProducts() {
-  document.getElementById('info').textContent = '⏳ Carregando catálogo...';
+async function loadExcel() {
+  setStatus('⏳ Carregando dados...');
   try {
-    const buf  = await (await fetch(EXCEL_FILE)).arrayBuffer();
-    const wb   = XLSX.read(buf, { type:'array' });
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets['Produtos'], { defval:null });
-    products   = rows.map(r => ({
-      id:     Number(r['ID']),
-      nome:   r['Nome']         || '',
-      cat:    r['Categoria']    || '',
-      subcat: r['Subcategoria'] || '',
-      marca:  r['Marca']        || '',
-      desc:   r['Descrição']    || '',
-    })).filter(p => p.id && p.nome);
-
+    const buf = await (await fetch(EXCEL_FILE)).arrayBuffer();
+    workbook  = XLSX.read(buf, { type: 'array' });
+    parseMatrizDR();
+    parseClienteSheet();
     renderFrequent();
     renderCatalog();
   } catch(e) {
-    document.getElementById('info').textContent = '⚠️ Erro ao carregar produtos.';
+    setStatus('⚠️ Erro ao carregar a planilha. Verifique o link e o acesso.');
     console.error(e);
   }
+}
+
+function setStatus(msg) {
+  document.getElementById('info').textContent    = msg;
+  document.getElementById('freqSub').textContent = msg;
+}
+
+// ── ABA "Matriz DR" → catálogo completo ───────────────────────
+// Cabeçalho na LINHA 2 (índice 1); lemos passando header:1 manualmente.
+function parseMatrizDR() {
+  const sheet = workbook.Sheets['Matriz DR'];
+  if (!sheet) { console.warn('Aba "Matriz DR" não encontrada.'); return; }
+
+  // range começa na linha 2 (header) — forçamos via sheet_to_json com header numérico
+  // e depois tratamos a primeira linha como cabeçalho.
+  const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+  // Linha 1 (índice 1) = cabeçalhos reais
+  const headers = raw[1] ? raw[1].map(h => String(h).trim()) : [];
+
+  // Linhas a partir do índice 2 = dados
+  products = raw.slice(2)
+    .map(row => {
+      const r = {};
+      headers.forEach((h, i) => r[h] = row[i] ?? '');
+      return r;
+    })
+    .filter(r => r['Material'] && r['Texto breve material'])
+    .map(r => ({
+      codigo:    String(r['Material']).trim(),
+      nome:      String(r['Texto breve material']).trim(),
+      cliente:   String(r['Cliente']).trim(),
+      razao:     String(r['Razão Social']).trim(),
+      preco:     r['Montante de condição'],
+      moeda:     String(r['Moeda']).trim(),
+      minVenda:  r['Min. Venda (kg)'],
+      embalagem: String(r['Embalagem']).trim(),
+      qtdEmb:    r['Quantidade embalagem'],
+      leadTime:  r['Lead Time (dias)'],
+      ncm:       String(r['NCM']).trim(),
+      validade:  r['Validade(em meses)'],
+      setor:     String(r['Setor de atividade material']).trim(),
+      equipe:    String(r['Equipe de vendas']).trim(),
+    }));
+}
+
+// ── ABA DO CLIENTE → pedidos frequentes ───────────────────────
+// Cabeçalho na LINHA 8 (índice 7).
+function parseClienteSheet() {
+  const sheet = workbook.Sheets[currentUser.sheetName];
+  if (!sheet) {
+    console.warn(`Aba "${currentUser.sheetName}" não encontrada na planilha.`);
+    frequent = [];
+    return;
+  }
+
+  const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+  // Linha 8 (índice 7) = cabeçalhos
+  const headers = raw[7] ? raw[7].map(h => String(h).trim()) : [];
+
+  // Linhas a partir do índice 8 = dados
+  frequent = raw.slice(8)
+    .map(row => {
+      const r = {};
+      headers.forEach((h, i) => r[h] = row[i] ?? '');
+      return r;
+    })
+    .filter(r => r['Produto'] || r['Código para colar no sistema'])
+    .map((r, i) => ({
+      // Usamos o código SAP como ID único; fallback para índice se não existir
+      id:          String(r['Código para colar no sistema']).trim() || `freq-${i}`,
+      produto:     String(r['Produto']).trim(),
+      familia:     String(r['Família']).trim(),
+      embalagem:   String(r['Embalagem']).trim(),
+      kg:          r[' kg '] ?? r['kg'] ?? '',
+      qntSugerida: r['QNT'] || 1,
+      notas:       String(r['Notas']).trim(),
+      precoKg:     r['Preço/kg']  ?? '',
+      precoEmb:    r['Preço/embalagem'] ?? '',
+      desconto:    r['Desconto']  ?? '',
+      descGrupo:   String(r['Desc Grupo']).trim(),
+    }));
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -578,80 +625,122 @@ async function loadProducts() {
 // ══════════════════════════════════════════════════════════════
 
 function renderFrequent() {
-  const ids  = currentUser.pedidosFrequentes;
-  const list = ids.map(id => products.find(p => p.id === id)).filter(Boolean);
-
   document.getElementById('freqSub').textContent =
-    `${list.length} produto${list.length !== 1 ? 's' : ''} do seu histórico de pedidos.`;
+    `${frequent.length} produto${frequent.length !== 1 ? 's' : ''} do seu histórico de pedidos.`;
 
-  document.getElementById('freqList').innerHTML = list.length
-    ? list.map(p => `
+  document.getElementById('freqList').innerHTML = frequent.length
+    ? frequent.map(p => `
         <div class="freq-item">
-          <div class="freq-emoji">${EMOJIS[p.subcat] || '📦'}</div>
+          <div class="freq-emoji">📦</div>
           <div>
-            <div class="freq-name">${p.nome}</div>
-            <div class="freq-meta">${p.marca} · ${p.cat}</div>
+            <div class="freq-name">${p.produto || p.id}</div>
+            <div class="freq-meta">
+              ${p.familia ? `<span>${p.familia}</span>` : ''}
+              ${p.embalagem ? ` · ${p.embalagem}` : ''}
+              ${p.kg ? ` · ${p.kg} kg` : ''}
+              ${p.notas ? ` · <em>${p.notas}</em>` : ''}
+            </div>
           </div>
-          <button class="btn-add-one" onclick="addToCart(${p.id})">+ Adicionar</button>
+          <button class="btn-add-one" onclick="addFreqToCart('${p.id}')">+ Adicionar</button>
         </div>`).join('')
-    : `<div class="empty"><div>⭐</div><div>Nenhum pedido frequente cadastrado.</div></div>`;
+    : `<div class="empty"><div>⭐</div><div>Nenhum pedido frequente encontrado na aba <strong>${currentUser.sheetName}</strong>.</div></div>`;
 }
 
 function addAllFrequent() {
-  const ids  = currentUser.pedidosFrequentes;
-  const list = ids.map(id => products.find(p => p.id === id)).filter(Boolean);
-  if (!list.length) return;
-  list.forEach(p => {
-    const item = cart.find(x => x.id === p.id);
-    if (item) item.qty++; else cart.push({ ...p, qty:1 });
-  });
+  if (!frequent.length) return;
+  frequent.forEach(p => addFreqToCartSilent(p));
   updateBadge();
   renderCart();
-  notify(`✓ ${list.length} produto${list.length !== 1 ? 's adicionados' : ' adicionado'} ao carrinho`);
+  notify(`✓ ${frequent.length} produto${frequent.length !== 1 ? 's adicionados' : ' adicionado'} ao carrinho`);
+}
+
+function addFreqToCart(id) {
+  const p = frequent.find(x => x.id === id);
+  if (!p) return;
+  addFreqToCartSilent(p);
+  updateBadge();
+  renderCart();
+  notify(`✓ ${p.produto || p.id} adicionado`);
+}
+
+function addFreqToCartSilent(p) {
+  const item = cart.find(x => x.id === p.id);
+  if (item) item.qty += (Number(p.qntSugerida) || 1);
+  else cart.push({
+    id:        p.id,
+    nome:      p.produto || p.id,
+    familia:   p.familia,
+    embalagem: p.embalagem,
+    kg:        p.kg,
+    precoKg:   p.precoKg,
+    precoEmb:  p.precoEmb,
+    desconto:  p.desconto,
+    qty:       Number(p.qntSugerida) || 1,
+    origem:    'frequente',
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
-//  PÁGINA: CATÁLOGO
+//  PÁGINA: CATÁLOGO (Matriz DR)
 // ══════════════════════════════════════════════════════════════
 
 function renderCatalog() {
   const list = products.filter(p =>
     !query ||
     p.nome.toLowerCase().includes(query) ||
-    p.marca.toLowerCase().includes(query) ||
-    p.cat.toLowerCase().includes(query)
+    p.codigo.toLowerCase().includes(query) ||
+    p.setor.toLowerCase().includes(query) ||
+    p.embalagem.toLowerCase().includes(query)
   );
+
   document.getElementById('info').innerHTML =
     `<strong>${list.length}</strong> produto${list.length !== 1 ? 's' : ''} encontrado${list.length !== 1 ? 's' : ''}`;
+
   document.getElementById('grid').innerHTML = list.length
     ? list.map(p => `
         <div class="card">
-          <div class="card-img">${EMOJIS[p.subcat] || '📦'}</div>
+          <div class="card-img">📦</div>
           <div class="card-body">
-            <div class="card-cat">${p.cat} · ${p.subcat}</div>
+            <div class="card-cat">${p.setor || 'Produto'}${p.equipe ? ' · ' + p.equipe : ''}</div>
             <div class="card-name">${p.nome}</div>
-            <div class="card-brand">${p.marca}</div>
-            <div class="card-desc">${p.desc}</div>
+            <div class="card-brand">Cód: ${p.codigo}${p.embalagem ? ' · ' + p.embalagem : ''}</div>
+            <div class="card-desc">
+              ${p.minVenda ? `Mín: ${p.minVenda} kg` : ''}
+              ${p.leadTime ? ` · Lead: ${p.leadTime}d` : ''}
+              ${p.ncm ? ` · NCM: ${p.ncm}` : ''}
+            </div>
           </div>
           <div class="card-footer">
-            <button class="btn-add" onclick="addToCart(${p.id})">🛒 Adicionar</button>
+            <button class="btn-add" onclick="addCatalogToCart('${p.codigo}')">🛒 Adicionar</button>
           </div>
         </div>`).join('')
     : `<div class="empty"><div>🔍</div><div>Nenhum produto encontrado</div></div>`;
 }
 
-// ══════════════════════════════════════════════════════════════
-//  CARRINHO (compartilhado entre páginas)
-// ══════════════════════════════════════════════════════════════
-
-function addToCart(id) {
-  const p    = products.find(x => x.id === id);
-  const item = cart.find(x => x.id === id);
-  if (item) item.qty++; else cart.push({ ...p, qty:1 });
+function addCatalogToCart(codigo) {
+  const p = products.find(x => x.codigo === codigo);
+  if (!p) return;
+  const item = cart.find(x => x.id === codigo);
+  if (item) item.qty++;
+  else cart.push({
+    id:        p.codigo,
+    nome:      p.nome,
+    embalagem: p.embalagem,
+    kg:        p.minVenda,
+    precoKg:   p.preco,
+    precoEmb:  '',
+    desconto:  '',
+    qty:       1,
+    origem:    'catalogo',
+  });
   updateBadge();
   renderCart();
   notify(`✓ ${p.nome} adicionado`);
 }
+
+// ══════════════════════════════════════════════════════════════
+//  CARRINHO (compartilhado entre páginas)
+// ══════════════════════════════════════════════════════════════
 
 function changeQty(id, d) {
   const i = cart.findIndex(x => x.id === id);
@@ -676,15 +765,15 @@ function renderCart() {
   document.getElementById('cartItems').innerHTML = cart.length
     ? cart.map(item => `
         <div class="cart-item">
-          <div class="item-emoji">${EMOJIS[item.subcat] || '📦'}</div>
+          <div class="item-emoji">📦</div>
           <div>
             <div class="item-name">${item.nome}</div>
-            <div class="item-sub">${item.marca} · qtd: ${item.qty}</div>
+            <div class="item-sub">${item.embalagem || ''} · qtd: ${item.qty}</div>
           </div>
           <div class="qty-controls">
-            <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
+            <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
             <span class="qty-val">${item.qty}</span>
-            <button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button>
+            <button class="qty-btn" onclick="changeQty('${item.id}', -1)">−</button>
           </div>
         </div>`).join('')
     : `<div class="cart-empty"><div>🛒</div><div>Carrinho vazio</div></div>`;
@@ -700,17 +789,19 @@ async function checkout() {
   btn.textContent = '⏳ Enviando...';
   try {
     const res = await fetch(N8N_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         pedido_id:   `PED-${Date.now()}`,
         data_hora:   new Date().toISOString(),
         usuario:     currentUser.usuario,
         cliente:     currentUser.nome,
+        aba_excel:   currentUser.sheetName,
         total_itens: cart.reduce((s, x) => s + x.qty, 0),
-        itens: cart.map(({ id, nome, cat, subcat, marca, qty }) =>
-          ({ id, nome, categoria:cat, subcategoria:subcat, marca, quantidade:qty })
-        ),
+        itens: cart.map(({ id, nome, embalagem, kg, precoKg, precoEmb, desconto, qty, origem }) => ({
+          codigo: id, nome, embalagem, kg, preco_kg: precoKg,
+          preco_embalagem: precoEmb, desconto, quantidade: qty, origem,
+        })),
       })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);

@@ -319,7 +319,7 @@
       <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password">
     </div>
     <div class="login-error" id="loginError"></div>
-    <button class="btn-login" onclick="doLogin()">Entrar</button>
+    <button class="btn-login" id="btnLogin" onclick="doLogin()">Entrar</button>
   </div>
 </div>
 
@@ -384,7 +384,8 @@
       <div class="nav-item" onclick="toggleCart()">
         <span class="nav-icon">🛒</span> Ver Carrinho
       </div>
-      <div class="nav-item" onclick="doLogout()" style="color:#FF6584">
+      </div>
+      <div class="nav-item" onclick="doLogout()" style="color:#E85D26">
         <span class="nav-icon">🚪</span> Sair
       </div>
     </aside>
@@ -445,27 +446,66 @@
 const EXCEL_FILE  = 'simulacao_splendi.xlsx';
 const N8N_WEBHOOK = 'Minha URL';
 
-// Credenciais de acesso por cliente.
-// "sheetName" deve ser EXATAMENTE igual ao nome da aba no Excel.
-// Adicione/remova entradas conforme os clientes da planilha.
-const USERS = [
-  { usuario: 'delicci',   senha: '1234', nome: '++ Delicci',              sheetName: '++ Delicci'                },
-  { usuario: 'natulce',   senha: '1234', nome: '++ Natulce',              sheetName: '++ Natulce'                },
-  { usuario: 'skimil',    senha: '1234', nome: '++ Skimil & Skimoni',     sheetName: '++ Skimil & Skimoni'       },
-  { usuario: 'frutibom',  senha: '1234', nome: 'A C Alves Lopes | Frutibom', sheetName: 'A C Alves Lopes | Frutibom' },
-  // Para adicionar novo cliente, copie uma linha acima e ajuste os campos.
-];
+// USERS é preenchido dinamicamente ao carregar o Excel (aba "Usuários")
+let USERS = [];
 
 // ══════════════════════════════════════════════════════════════
 //  ESTADO GLOBAL
 // ══════════════════════════════════════════════════════════════
 
-let workbook    = null;   // workbook XLSX carregado (reutilizado nas duas páginas)
-let products    = [];     // catálogo completo vindo da aba "Matriz DR"
-let frequent    = [];     // pedidos frequentes da aba do cliente logado
+let workbook    = null;
+let products    = [];
+let frequent    = [];
 let cart        = [];
 let query       = '';
 let currentUser = null;
+
+// ══════════════════════════════════════════════════════════════
+//  INICIALIZAÇÃO — carrega Excel antes de mostrar login
+// ══════════════════════════════════════════════════════════════
+
+async function init() {
+  const loginBtn = document.getElementById('btnLogin');
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Carregando...';
+
+  try {
+    const buf = await (await fetch(EXCEL_FILE)).arrayBuffer();
+    workbook  = XLSX.read(buf, { type: 'array' });
+    parseUsuarios();
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Entrar';
+  } catch(e) {
+    document.getElementById('loginError').textContent =
+      '⚠️ Não foi possível carregar a planilha. Verifique o link e o acesso.';
+    console.error(e);
+  }
+}
+
+// ── Lê aba "Usuários" e monta o array USERS ───────────────────
+// Estrutura: cabeçalho na linha 3, dados a partir da linha 4
+// Colunas: Usuário (login) | Nome / Cliente | Aba da Planilha | Senha
+function parseUsuarios() {
+  const sheet = workbook.Sheets['Usuários'];
+  if (!sheet) { console.warn('Aba "Usuários" não encontrada.'); return; }
+
+  const raw     = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+  const headers = raw[2] ? raw[2].map(h => String(h).trim()) : [];
+
+  USERS = raw.slice(3)
+    .map(row => {
+      const r = {};
+      headers.forEach((h, i) => r[h] = String(row[i] ?? '').trim());
+      return r;
+    })
+    .filter(r => r['Usuário (login)'] && r['Senha'])
+    .map(r => ({
+      usuario:   r['Usuário (login)'].toLowerCase(),
+      nome:      r['Nome / Cliente'],
+      sheetName: r['Aba da Planilha'],
+      senha:     r['Senha'],
+    }));
+}
 
 // ══════════════════════════════════════════════════════════════
 //  LOGIN / LOGOUT
@@ -485,11 +525,16 @@ function doLogin() {
   document.getElementById('app').classList.add('visible');
   document.getElementById('userName').textContent  = user.nome;
   document.getElementById('userAvatar').textContent = user.nome[0].toUpperCase();
-  loadExcel();
+  // workbook já está carregado — só parseia as abas relevantes
+  parseMatrizDR();
+  parseClienteSheet();
+  renderFrequent();
+  renderCatalog();
 }
 
 function doLogout() {
-  currentUser = workbook = null;
+  currentUser = null;
+  // Mantém workbook e USERS em memória — evita recarregar o Excel
   products = frequent = cart = [];
   query = '';
   document.getElementById('loginUser').value = '';
@@ -516,30 +561,6 @@ function goTo(page) {
   const isSearch = page === 'catalog';
   document.getElementById('searchWrap').classList.toggle('visible', isSearch);
   if (!isSearch) { query = ''; document.getElementById('search').value = ''; }
-}
-
-// ══════════════════════════════════════════════════════════════
-//  CARREGAR EXCEL  (uma única requisição, duas abas lidas)
-// ══════════════════════════════════════════════════════════════
-
-async function loadExcel() {
-  setStatus('⏳ Carregando dados...');
-  try {
-    const buf = await (await fetch(EXCEL_FILE)).arrayBuffer();
-    workbook  = XLSX.read(buf, { type: 'array' });
-    parseMatrizDR();
-    parseClienteSheet();
-    renderFrequent();
-    renderCatalog();
-  } catch(e) {
-    setStatus('⚠️ Erro ao carregar a planilha. Verifique o link e o acesso.');
-    console.error(e);
-  }
-}
-
-function setStatus(msg) {
-  document.getElementById('info').textContent    = msg;
-  document.getElementById('freqSub').textContent = msg;
 }
 
 // ── ABA "Matriz DR" → catálogo completo ───────────────────────
@@ -776,69 +797,3 @@ function renderCart() {
             <button class="qty-btn" onclick="changeQty('${item.id}', -1)">−</button>
           </div>
         </div>`).join('')
-    : `<div class="cart-empty"><div>🛒</div><div>Carrinho vazio</div></div>`;
-}
-
-// ══════════════════════════════════════════════════════════════
-//  CHECKOUT → N8N
-// ══════════════════════════════════════════════════════════════
-
-async function checkout() {
-  const btn = document.getElementById('checkoutBtn');
-  btn.disabled = true;
-  btn.textContent = '⏳ Enviando...';
-  try {
-    const res = await fetch(N8N_WEBHOOK, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        pedido_id:   `PED-${Date.now()}`,
-        data_hora:   new Date().toISOString(),
-        usuario:     currentUser.usuario,
-        cliente:     currentUser.nome,
-        aba_excel:   currentUser.sheetName,
-        total_itens: cart.reduce((s, x) => s + x.qty, 0),
-        itens: cart.map(({ id, nome, embalagem, kg, precoKg, precoEmb, desconto, qty, origem }) => ({
-          codigo: id, nome, embalagem, kg, preco_kg: precoKg,
-          preco_embalagem: precoEmb, desconto, quantidade: qty, origem,
-        })),
-      })
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    notify('🎉 Pedido enviado com sucesso!');
-    cart = [];
-    updateBadge();
-    renderCart();
-    toggleCart();
-  } catch(e) {
-    notify('❌ Erro ao enviar pedido. Tente novamente.');
-    btn.disabled = false;
-    btn.textContent = '💳 Finalizar Pedido';
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-//  UI HELPERS
-// ══════════════════════════════════════════════════════════════
-
-function toggleCart() { document.getElementById('overlay').classList.toggle('open'); }
-function closeCartOutside(e) { if (e.target === document.getElementById('overlay')) toggleCart(); }
-
-let notifTimer;
-function notify(msg) {
-  const el = document.getElementById('notif');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(notifTimer);
-  notifTimer = setTimeout(() => el.classList.remove('show'), 2500);
-}
-
-document.getElementById('cartBtn').addEventListener('click', toggleCart);
-document.getElementById('search').addEventListener('input', e => {
-  query = e.target.value.toLowerCase().trim();
-  renderCatalog();
-});
-
-</script>
-</body>
-</html>

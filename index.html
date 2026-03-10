@@ -23,42 +23,52 @@
   #loginScreen.hidden { display:none; }
   .login-box {
     background:var(--surface); border:1px solid var(--border); border-radius:16px;
-    padding:2.5rem 2rem; width:100%; max-width:360px;
-    border-top:2px solid transparent;
-    background-clip:padding-box;
-    position:relative;
+    padding:2.5rem 2rem; width:100%; max-width:360px; position:relative;
   }
   .login-box::before {
-    content:''; position:absolute; top:-2px; left:0; right:0; height:2px;
+    content:''; position:absolute; top:-1px; left:0; right:0; height:3px;
     background:var(--grad); border-radius:16px 16px 0 0;
   }
-  .login-logo {
-    display:flex; align-items:center; gap:10px; margin-bottom:2rem;
-  }
-  .login-logo-dot { display:none; }
-  .login-title { font-family:'Inter',sans-serif; font-size:1.1rem; font-weight:700; margin-bottom:.4rem; }
+  .login-logo { display:flex; align-items:center; gap:10px; margin-bottom:2rem; }
+  .login-title { font-size:1.1rem; font-weight:700; margin-bottom:.4rem; }
   .login-sub { font-size:.82rem; color:var(--muted); margin-bottom:1.75rem; }
   .login-field { margin-bottom:1rem; }
   .login-field label { display:block; font-size:.78rem; color:var(--muted); margin-bottom:5px; }
-  .login-field input {
+  .login-field input.plain {
     width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:9px;
-    padding:10px 13px; color:var(--text); font-family:inherit; font-size:.9rem; outline:none;
-    transition:border-color .2s;
+    padding:10px 13px; color:var(--text); font-family:inherit; font-size:.9rem;
+    outline:none; transition:border-color .2s;
   }
-  .login-field input:focus { border-color:var(--accent); }
-  .login-error { font-size:.78rem; color:#FF6584; margin-bottom:.75rem; min-height:1rem; }
+  .login-field input.plain:focus { border-color:var(--accent); }
+
+  /* campo com botão olho */
+  .input-wrap { position:relative; display:flex; align-items:center; }
+  .input-wrap input {
+    width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:9px;
+    padding:10px 40px 10px 13px; color:var(--text); font-family:inherit; font-size:.9rem;
+    outline:none; transition:border-color .2s;
+  }
+  .input-wrap input:focus { border-color:var(--accent); }
+  .btn-eye {
+    position:absolute; right:10px; background:none; border:none; cursor:pointer;
+    padding:4px; color:var(--dim); display:flex; align-items:center; transition:color .15s;
+  }
+  .btn-eye:hover { color:var(--accent); }
+
+  .login-error { font-size:.78rem; color:#E85D26; margin-bottom:.75rem; min-height:1rem; }
   .btn-login {
     width:100%; padding:12px; background:var(--accent); border:none; border-radius:9px;
     color:#fff; font-family:'Inter',sans-serif; font-size:.95rem; font-weight:600;
     cursor:pointer; transition:background .2s;
   }
   .btn-login:hover { background:var(--accent-h); }
+  .btn-login:disabled { background:var(--dim); cursor:not-allowed; }
 
-  /* ── APP (oculto até login) ────────────────────────────────── */
+  /* ── APP ────────────────────────────────────────────────────── */
   #app { display:none; height:100vh; flex-direction:column; }
   #app.visible { display:flex; }
 
-  /* ── HEADER ────────────────────────────────────────────────── */
+  /* ── HEADER ─────────────────────────────────────────────────── */
   header {
     height:60px; flex-shrink:0;
     background:rgba(255,255,255,.97); backdrop-filter:blur(20px);
@@ -70,12 +80,9 @@
     content:''; position:absolute; bottom:-1px; left:0; right:0; height:2px;
     background:var(--grad); opacity:.6;
   }
-  .logo {
-    display:flex; align-items:center; gap:8px; flex-shrink:0;
-  }
-  .logo-dot { display:none; }
+  .logo { display:flex; align-items:center; gap:8px; flex-shrink:0; }
   .search-bar {
-    flex:1; max-width:420px; display:flex; align-items:center; gap:8px;
+    display:flex; align-items:center; gap:8px;
     background:var(--surface); border:1px solid var(--border);
     border-radius:50px; padding:0 1rem; transition:border-color .2s;
   }
@@ -114,14 +121,15 @@
   .cart-badge {
     position:absolute; top:-4px; right:-4px;
     background:var(--accent); color:#fff; font-size:.58rem; font-weight:700;
-    width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    width:16px; height:16px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
   }
   .cart-badge.hidden { display:none; }
 
-  /* ── BODY LAYOUT ───────────────────────────────────────────── */
+  /* ── LAYOUT ─────────────────────────────────────────────────── */
   .app-body { display:flex; flex:1; overflow:hidden; }
 
-  /* ── SIDEBAR ───────────────────────────────────────────────── */
+  /* ── SIDEBAR ─────────────────────────────────────────────────── */
   aside {
     width:var(--sidebar); flex-shrink:0;
     background:var(--surface); border-right:1px solid var(--border);
@@ -141,29 +149,21 @@
   }
   .nav-item:hover { background:var(--surface2); color:var(--text); }
   .nav-item.active {
-    background:rgba(232,93,38,.12); border-color:rgba(232,93,38,.35);
-    color:#F0884A;
+    background:rgba(232,93,38,.12); border-color:rgba(232,93,38,.35); color:#F0884A;
   }
   .nav-icon { font-size:1rem; width:20px; text-align:center; }
   .nav-divider { height:1px; background:var(--border); margin:.5rem 0; }
 
-  /* ── MAIN CONTENT ──────────────────────────────────────────── */
+  /* ── MAIN ────────────────────────────────────────────────────── */
   main { flex:1; overflow-y:auto; padding:1.75rem; }
-
-  /* PAGE: oculto/visível */
   .page { display:none; }
   .page.active { display:block; }
-
-  .page-title {
-    font-family:'Inter',sans-serif; font-size:1.3rem; font-weight:800;
-    margin-bottom:.35rem;
-  }
+  .page-title { font-size:1.3rem; font-weight:800; margin-bottom:.35rem; }
   .page-sub { font-size:.82rem; color:var(--muted); margin-bottom:1.5rem; }
 
-  /* ── PEDIDOS FREQUENTES ────────────────────────────────────── */
+  /* ── PEDIDOS FREQUENTES ──────────────────────────────────────── */
   .freq-header {
-    display:flex; align-items:center; justify-content:space-between;
-    margin-bottom:1.25rem;
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem;
   }
   .btn-add-all {
     display:flex; align-items:center; gap:7px;
@@ -174,8 +174,7 @@
   .btn-add-all:hover { background:var(--accent-h); }
   .freq-list { display:flex; flex-direction:column; gap:.6rem; }
   .freq-item {
-    display:grid; grid-template-columns:48px 1fr auto;
-    align-items:center; gap:1rem;
+    display:grid; grid-template-columns:48px 1fr auto; align-items:center; gap:1rem;
     background:var(--surface); border:1px solid var(--border); border-radius:12px;
     padding:.9rem 1rem; transition:border-color .2s;
   }
@@ -190,10 +189,8 @@
   }
   .btn-add-one:hover { background:var(--accent); border-color:var(--accent); color:#fff; }
 
-  /* ── PRODUTOS (catálogo) ───────────────────────────────────── */
-  .grid {
-    display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:1rem;
-  }
+  /* ── CATÁLOGO ────────────────────────────────────────────────── */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:1rem; }
   .card {
     background:var(--surface); border:1px solid var(--border); border-radius:12px;
     overflow:hidden; transition:transform .2s, border-color .2s, box-shadow .2s;
@@ -202,27 +199,26 @@
   .card-img { height:140px; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:3rem; }
   .card-body { padding:.85rem; }
   .card-cat { font-size:.62rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--dim); margin-bottom:3px; }
-  .card-name { font-family:'Inter',sans-serif; font-size:.88rem; font-weight:700; line-height:1.3; margin-bottom:3px; }
+  .card-name { font-size:.88rem; font-weight:700; line-height:1.3; margin-bottom:3px; }
   .card-brand { font-size:.73rem; color:var(--muted); margin-bottom:.6rem; }
   .card-desc { font-size:.76rem; color:var(--muted); line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .card-footer { padding:.65rem .85rem .85rem; }
   .btn-add {
     width:100%; padding:8px; background:var(--accent); border:none; border-radius:8px;
-    color:#fff; font-family:'Inter',sans-serif; font-size:.8rem; font-weight:700;
-    cursor:pointer; transition:background .2s;
+    color:#fff; font-size:.8rem; font-weight:700; cursor:pointer; transition:background .2s;
   }
   .btn-add:hover { background:var(--accent-h); }
   .result-info { font-size:.8rem; color:var(--muted); margin-bottom:1.1rem; }
   .result-info strong { color:var(--text); }
 
-  /* ── EMPTY ─────────────────────────────────────────────────── */
+  /* ── EMPTY ───────────────────────────────────────────────────── */
   .empty { text-align:center; padding:3.5rem 1rem; color:var(--muted); }
   .empty div:first-child { font-size:2.8rem; opacity:.3; margin-bottom:.75rem; }
   .grid .empty { grid-column:1/-1; }
 
-  /* ── CART PANEL ────────────────────────────────────────────── */
+  /* ── CART PANEL ──────────────────────────────────────────────── */
   .overlay {
-    position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(4px);
+    position:fixed; inset:0; background:rgba(0,0,0,.4); backdrop-filter:blur(4px);
     z-index:200; opacity:0; pointer-events:none; transition:opacity .3s;
   }
   .overlay.open { opacity:1; pointer-events:all; }
@@ -237,7 +233,7 @@
     padding:1.1rem 1.4rem; border-bottom:1px solid var(--border);
     display:flex; align-items:center; justify-content:space-between;
   }
-  .panel-title { font-family:'Inter',sans-serif; font-size:.95rem; font-weight:700; }
+  .panel-title { font-size:.95rem; font-weight:700; }
   .btn-close {
     width:28px; height:28px; background:var(--surface2); border:1px solid var(--border);
     border-radius:7px; cursor:pointer; color:var(--muted); font-size:.85rem;
@@ -259,7 +255,7 @@
     border-radius:4px; cursor:pointer; color:var(--text); font-size:.82rem;
     display:flex; align-items:center; justify-content:center; transition:background .15s;
   }
-  .qty-btn:hover { background:var(--accent); border-color:var(--accent); }
+  .qty-btn:hover { background:var(--accent); border-color:var(--accent); color:#fff; }
   .qty-val { font-size:.8rem; font-weight:600; }
   .cart-empty { text-align:center; padding:2.5rem 1rem; color:var(--dim); }
   .cart-empty div:first-child { font-size:2.2rem; opacity:.3; margin-bottom:.65rem; }
@@ -267,13 +263,12 @@
   .items-count { font-size:.8rem; color:var(--muted); margin-bottom:.65rem; }
   .btn-checkout {
     width:100%; padding:12px; background:var(--accent); border:none; border-radius:9px;
-    color:#fff; font-family:'Inter',sans-serif; font-size:.9rem; font-weight:700;
-    cursor:pointer; transition:background .2s;
+    color:#fff; font-size:.9rem; font-weight:700; cursor:pointer; transition:background .2s;
   }
   .btn-checkout:hover { background:var(--accent-h); }
   .btn-checkout:disabled { background:var(--surface2); color:var(--dim); cursor:not-allowed; }
 
-  /* ── NOTIFICATION ──────────────────────────────────────────── */
+  /* ── NOTIFICAÇÃO ─────────────────────────────────────────────── */
   .notif {
     position:fixed; bottom:1.75rem; left:50%; transform:translateX(-50%) translateY(8px);
     background:var(--accent); color:#fff; padding:9px 20px; border-radius:50px;
@@ -285,47 +280,52 @@
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════════════
-     LOGIN
-══════════════════════════════════════════════════════ -->
+<!-- LOGIN -->
 <div id="loginScreen">
   <div class="login-box">
     <div class="login-logo">
       <svg width="140" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
-        <!-- Ícone flor multicolorido -->
         <g transform="translate(28,30)">
-          <circle cx="0" cy="-13" r="6" fill="#9B30FF"/>
-          <circle cx="9.2" cy="-9.2" r="6" fill="#6366F1"/>
-          <circle cx="13" cy="0" r="6" fill="#3B82F6"/>
-          <circle cx="9.2" cy="9.2" r="6" fill="#22C55E"/>
-          <circle cx="0" cy="13" r="6" fill="#EAB308"/>
-          <circle cx="-9.2" cy="9.2" r="6" fill="#F97316"/>
-          <circle cx="-13" cy="0" r="6" fill="#E85D26"/>
+          <circle cx="0"    cy="-13"  r="6" fill="#9B30FF"/>
+          <circle cx="9.2"  cy="-9.2" r="6" fill="#6366F1"/>
+          <circle cx="13"   cy="0"    r="6" fill="#3B82F6"/>
+          <circle cx="9.2"  cy="9.2"  r="6" fill="#22C55E"/>
+          <circle cx="0"    cy="13"   r="6" fill="#EAB308"/>
+          <circle cx="-9.2" cy="9.2"  r="6" fill="#F97316"/>
+          <circle cx="-13"  cy="0"    r="6" fill="#E85D26"/>
           <circle cx="-9.2" cy="-9.2" r="6" fill="#EC4899"/>
-          <circle cx="0" cy="0" r="7" fill="#FFFFFF"/>
+          <circle cx="0"    cy="0"    r="7" fill="#FFFFFF"/>
         </g>
-        <!-- Texto "splendi" -->
         <text x="52" y="37" font-family="Inter,sans-serif" font-weight="400" font-size="22" fill="#444444" letter-spacing="0.5">splendi</text>
       </svg>
     </div>
     <div class="login-title">Bem-vindo de volta</div>
     <div class="login-sub">Acesso restrito a usuários autorizados.</div>
+
     <div class="login-field">
       <label>Usuário</label>
-      <input id="loginUser" type="text" placeholder="seu.usuario" autocomplete="username">
+      <input id="loginUser" class="plain" type="text" placeholder="seu.usuario" autocomplete="username">
     </div>
+
     <div class="login-field">
       <label>Senha</label>
-      <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password">
+      <div class="input-wrap">
+        <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password">
+        <button class="btn-eye" type="button" id="btnEye" onclick="togglePassVisibility()" title="Mostrar/ocultar senha">
+          <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
     </div>
+
     <div class="login-error" id="loginError"></div>
-    <button class="btn-login" id="btnLogin" onclick="doLogin()">Entrar</button>
+    <button class="btn-login" id="btnLogin" onclick="doLogin()">Carregando...</button>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     APP
-══════════════════════════════════════════════════════ -->
+<!-- APP -->
 <div id="app">
 
   <!-- HEADER -->
@@ -333,15 +333,15 @@
     <div class="logo">
       <svg width="120" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
         <g transform="translate(28,30)">
-          <circle cx="0" cy="-13" r="6" fill="#9B30FF"/>
-          <circle cx="9.2" cy="-9.2" r="6" fill="#6366F1"/>
-          <circle cx="13" cy="0" r="6" fill="#3B82F6"/>
-          <circle cx="9.2" cy="9.2" r="6" fill="#22C55E"/>
-          <circle cx="0" cy="13" r="6" fill="#EAB308"/>
-          <circle cx="-9.2" cy="9.2" r="6" fill="#F97316"/>
-          <circle cx="-13" cy="0" r="6" fill="#E85D26"/>
+          <circle cx="0"    cy="-13"  r="6" fill="#9B30FF"/>
+          <circle cx="9.2"  cy="-9.2" r="6" fill="#6366F1"/>
+          <circle cx="13"   cy="0"    r="6" fill="#3B82F6"/>
+          <circle cx="9.2"  cy="9.2"  r="6" fill="#22C55E"/>
+          <circle cx="0"    cy="13"   r="6" fill="#EAB308"/>
+          <circle cx="-9.2" cy="9.2"  r="6" fill="#F97316"/>
+          <circle cx="-13"  cy="0"    r="6" fill="#E85D26"/>
           <circle cx="-9.2" cy="-9.2" r="6" fill="#EC4899"/>
-          <circle cx="0" cy="0" r="7" fill="#FFFFFF"/>
+          <circle cx="0"    cy="0"    r="7" fill="#FFFFFF"/>
         </g>
         <text x="52" y="37" font-family="Inter,sans-serif" font-weight="400" font-size="22" fill="#444444" letter-spacing="0.5">splendi</text>
       </svg>
@@ -349,7 +349,7 @@
 
     <div id="searchWrap" class="search-bar">
       <span style="color:var(--dim)">🔍</span>
-      <input id="search" type="text" placeholder="Buscar produtos, marcas...">
+      <input id="search" type="text" placeholder="Buscar produtos...">
     </div>
 
     <div class="header-right">
@@ -370,20 +370,16 @@
     <!-- SIDEBAR -->
     <aside>
       <div class="nav-section-title">Menu</div>
-
       <div class="nav-item active" id="nav-freq" onclick="goTo('freq')">
         <span class="nav-icon">⭐</span> Pedidos Frequentes
       </div>
       <div class="nav-item" id="nav-catalog" onclick="goTo('catalog')">
         <span class="nav-icon">🛍️</span> Produtos
       </div>
-
       <div class="nav-divider"></div>
       <div class="nav-section-title">Conta</div>
-
       <div class="nav-item" onclick="toggleCart()">
         <span class="nav-icon">🛒</span> Ver Carrinho
-      </div>
       </div>
       <div class="nav-item" onclick="doLogout()" style="color:#E85D26">
         <span class="nav-icon">🚪</span> Sair
@@ -392,8 +388,6 @@
 
     <!-- MAIN -->
     <main>
-
-      <!-- PÁGINA: PEDIDOS FREQUENTES -->
       <div class="page active" id="page-freq">
         <div class="freq-header">
           <div>
@@ -407,17 +401,15 @@
         <div class="freq-list" id="freqList"></div>
       </div>
 
-      <!-- PÁGINA: CATÁLOGO -->
       <div class="page" id="page-catalog">
         <div class="page-title">🛍️ Produtos</div>
         <div class="page-sub">Catálogo completo disponível para pedido.</div>
         <div class="result-info" id="info"></div>
         <div class="grid" id="grid"></div>
       </div>
-
     </main>
-  </div><!-- /app-body -->
-</div><!-- /app -->
+  </div>
+</div>
 
 <!-- CART PANEL -->
 <div class="overlay" id="overlay" onclick="closeCartOutside(event)">
@@ -442,17 +434,13 @@
 // ══════════════════════════════════════════════════════════════
 //  CONFIGURAÇÃO
 // ══════════════════════════════════════════════════════════════
-
 const EXCEL_FILE  = 'simulacao_splendi.xlsx';
 const N8N_WEBHOOK = 'Minha URL';
-
-// USERS é preenchido dinamicamente ao carregar o Excel (aba "Usuários")
-let USERS = [];
 
 // ══════════════════════════════════════════════════════════════
 //  ESTADO GLOBAL
 // ══════════════════════════════════════════════════════════════
-
+let USERS       = [];
 let workbook    = null;
 let products    = [];
 let frequent    = [];
@@ -461,36 +449,37 @@ let query       = '';
 let currentUser = null;
 
 // ══════════════════════════════════════════════════════════════
-//  INICIALIZAÇÃO — carrega Excel antes de mostrar login
+//  INICIALIZAÇÃO
 // ══════════════════════════════════════════════════════════════
-
 async function init() {
-  const loginBtn = document.getElementById('btnLogin');
-  loginBtn.disabled = true;
-  loginBtn.textContent = 'Carregando...';
-
+  const btn = document.getElementById('btnLogin');
+  btn.disabled = true;
+  btn.textContent = 'Carregando...';
   try {
     const buf = await (await fetch(EXCEL_FILE)).arrayBuffer();
     workbook  = XLSX.read(buf, { type: 'array' });
     parseUsuarios();
-    loginBtn.disabled = false;
-    loginBtn.textContent = 'Entrar';
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
   } catch(e) {
     document.getElementById('loginError').textContent =
       '⚠️ Não foi possível carregar a planilha. Verifique o link e o acesso.';
-    console.error(e);
+    console.error('Erro ao carregar Excel:', e);
   }
 }
 
-// ── Lê aba "Usuários" e monta o array USERS ───────────────────
-// Estrutura: cabeçalho na linha 3, dados a partir da linha 4
-// Colunas: Usuário (login) | Nome / Cliente | Aba da Planilha | Senha
+// ── Lê aba "Usuários" — cabeçalho linha 3, dados a partir da linha 4 ──
 function parseUsuarios() {
-  const sheet = workbook.Sheets['Usuários'];
-  if (!sheet) { console.warn('Aba "Usuários" não encontrada.'); return; }
-
+  // Tolerância a encoding: tenta com e sem acento
+  const sheet = workbook.Sheets['Usuários']
+             || workbook.Sheets['Usuarios']
+             || workbook.Sheets[Object.keys(workbook.Sheets).find(k => k.toLowerCase().includes('usu'))];
+  if (!sheet) {
+    console.warn('Aba Usuários não encontrada. Abas:', Object.keys(workbook.Sheets));
+    return;
+  }
   const raw     = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-  const headers = raw[2] ? raw[2].map(h => String(h).trim()) : [];
+  const headers = (raw[2] || []).map(h => String(h).trim());
 
   USERS = raw.slice(3)
     .map(row => {
@@ -505,27 +494,56 @@ function parseUsuarios() {
       sheetName: r['Aba da Planilha'],
       senha:     r['Senha'],
     }));
+
+  console.log(`✅ ${USERS.length} usuário(s) carregado(s):`, USERS.map(u => u.usuario));
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MOSTRAR / OCULTAR SENHA
+// ══════════════════════════════════════════════════════════════
+function togglePassVisibility() {
+  const input   = document.getElementById('loginPass');
+  const icon    = document.getElementById('eyeIcon');
+  const visible = input.type === 'text';
+
+  input.type = visible ? 'password' : 'text';
+
+  icon.innerHTML = visible
+    // olho fechado → senha oculta
+    ? `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`
+    // olho aberto com traço → senha visível
+    : `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+       <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+       <line x1="1" y1="1" x2="23" y2="23"/>`;
 }
 
 // ══════════════════════════════════════════════════════════════
 //  LOGIN / LOGOUT
 // ══════════════════════════════════════════════════════════════
-
 function doLogin() {
-  const u    = document.getElementById('loginUser').value.trim().toLowerCase();
-  const p    = document.getElementById('loginPass').value;
-  const user = USERS.find(x => x.usuario === u && x.senha === p);
-  if (!user) {
-    document.getElementById('loginError').textContent = 'Usuário ou senha incorretos.';
+  const u     = document.getElementById('loginUser').value.trim().toLowerCase();
+  const p     = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+
+  if (!USERS.length) {
+    errEl.textContent = '⚠️ Usuários ainda não carregados. Aguarde ou recarregue a página.';
     return;
   }
+  const user = USERS.find(x => x.usuario === u && x.senha === p);
+  if (!user) { errEl.textContent = 'Usuário ou senha incorretos.'; return; }
+
   currentUser = user;
-  document.getElementById('loginError').textContent = '';
+  errEl.textContent = '';
+
+  // Garante que a senha volte a ficar oculta
+  const passInput = document.getElementById('loginPass');
+  if (passInput.type === 'text') togglePassVisibility();
+
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
-  document.getElementById('userName').textContent  = user.nome;
+  document.getElementById('userName').textContent   = user.nome;
   document.getElementById('userAvatar').textContent = user.nome[0].toUpperCase();
-  // workbook já está carregado — só parseia as abas relevantes
+
   parseMatrizDR();
   parseClienteSheet();
   renderFrequent();
@@ -534,11 +552,12 @@ function doLogin() {
 
 function doLogout() {
   currentUser = null;
-  // Mantém workbook e USERS em memória — evita recarregar o Excel
   products = frequent = cart = [];
-  query = '';
+  query    = '';
+  const passInput = document.getElementById('loginPass');
+  passInput.value = '';
+  if (passInput.type === 'text') togglePassVisibility(); // fecha o olho
   document.getElementById('loginUser').value = '';
-  document.getElementById('loginPass').value = '';
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('app').classList.remove('visible');
   document.getElementById('overlay').classList.remove('open');
@@ -552,7 +571,6 @@ document.getElementById('loginPass').addEventListener('keydown', e => {
 // ══════════════════════════════════════════════════════════════
 //  NAVEGAÇÃO
 // ══════════════════════════════════════════════════════════════
-
 function goTo(page) {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   document.getElementById(`nav-${page}`).classList.add('active');
@@ -563,20 +581,16 @@ function goTo(page) {
   if (!isSearch) { query = ''; document.getElementById('search').value = ''; }
 }
 
-// ── ABA "Matriz DR" → catálogo completo ───────────────────────
-// Cabeçalho na LINHA 2 (índice 1); lemos passando header:1 manualmente.
+// ══════════════════════════════════════════════════════════════
+//  PARSE: Matriz DR  (cabeçalho linha 2 = índice 1)
+// ══════════════════════════════════════════════════════════════
 function parseMatrizDR() {
   const sheet = workbook.Sheets['Matriz DR'];
   if (!sheet) { console.warn('Aba "Matriz DR" não encontrada.'); return; }
 
-  // range começa na linha 2 (header) — forçamos via sheet_to_json com header numérico
-  // e depois tratamos a primeira linha como cabeçalho.
-  const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+  const raw     = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+  const headers = (raw[1] || []).map(h => String(h).trim());
 
-  // Linha 1 (índice 1) = cabeçalhos reais
-  const headers = raw[1] ? raw[1].map(h => String(h).trim()) : [];
-
-  // Linhas a partir do índice 2 = dados
   products = raw.slice(2)
     .map(row => {
       const r = {};
@@ -587,37 +601,34 @@ function parseMatrizDR() {
     .map(r => ({
       codigo:    String(r['Material']).trim(),
       nome:      String(r['Texto breve material']).trim(),
-      cliente:   String(r['Cliente']).trim(),
-      razao:     String(r['Razão Social']).trim(),
       preco:     r['Montante de condição'],
       moeda:     String(r['Moeda']).trim(),
       minVenda:  r['Min. Venda (kg)'],
       embalagem: String(r['Embalagem']).trim(),
-      qtdEmb:    r['Quantidade embalagem'],
       leadTime:  r['Lead Time (dias)'],
       ncm:       String(r['NCM']).trim(),
       validade:  r['Validade(em meses)'],
       setor:     String(r['Setor de atividade material']).trim(),
       equipe:    String(r['Equipe de vendas']).trim(),
     }));
+
+  console.log(`✅ ${products.length} produto(s) da Matriz DR`);
 }
 
-// ── ABA DO CLIENTE → pedidos frequentes ───────────────────────
-// Cabeçalho na LINHA 8 (índice 7).
+// ══════════════════════════════════════════════════════════════
+//  PARSE: Aba do cliente  (cabeçalho linha 8 = índice 7)
+// ══════════════════════════════════════════════════════════════
 function parseClienteSheet() {
   const sheet = workbook.Sheets[currentUser.sheetName];
   if (!sheet) {
-    console.warn(`Aba "${currentUser.sheetName}" não encontrada na planilha.`);
+    console.warn(`Aba "${currentUser.sheetName}" não encontrada.`);
     frequent = [];
     return;
   }
 
-  const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+  const raw     = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+  const headers = (raw[7] || []).map(h => String(h).trim());
 
-  // Linha 8 (índice 7) = cabeçalhos
-  const headers = raw[7] ? raw[7].map(h => String(h).trim()) : [];
-
-  // Linhas a partir do índice 8 = dados
   frequent = raw.slice(8)
     .map(row => {
       const r = {};
@@ -626,52 +637,49 @@ function parseClienteSheet() {
     })
     .filter(r => r['Produto'] || r['Código para colar no sistema'])
     .map((r, i) => ({
-      // Usamos o código SAP como ID único; fallback para índice se não existir
       id:          String(r['Código para colar no sistema']).trim() || `freq-${i}`,
       produto:     String(r['Produto']).trim(),
       familia:     String(r['Família']).trim(),
       embalagem:   String(r['Embalagem']).trim(),
       kg:          r[' kg '] ?? r['kg'] ?? '',
-      qntSugerida: r['QNT'] || 1,
+      qntSugerida: Number(r['QNT']) || 1,
       notas:       String(r['Notas']).trim(),
-      precoKg:     r['Preço/kg']  ?? '',
+      precoKg:     r['Preço/kg']        ?? '',
       precoEmb:    r['Preço/embalagem'] ?? '',
-      desconto:    r['Desconto']  ?? '',
-      descGrupo:   String(r['Desc Grupo']).trim(),
+      desconto:    r['Desconto']        ?? '',
     }));
+
+  console.log(`✅ ${frequent.length} pedido(s) frequente(s)`);
 }
 
 // ══════════════════════════════════════════════════════════════
-//  PÁGINA: PEDIDOS FREQUENTES
+//  PEDIDOS FREQUENTES
 // ══════════════════════════════════════════════════════════════
-
 function renderFrequent() {
   document.getElementById('freqSub').textContent =
     `${frequent.length} produto${frequent.length !== 1 ? 's' : ''} do seu histórico de pedidos.`;
 
   document.getElementById('freqList').innerHTML = frequent.length
-    ? frequent.map(p => `
+    ? frequent.map(p => {
+        const safeId = p.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        const meta   = [p.familia, p.embalagem ? p.embalagem : '', p.kg ? p.kg+' kg' : '', p.notas ? '<em>'+p.notas+'</em>' : ''].filter(Boolean).join(' · ');
+        return `
         <div class="freq-item">
           <div class="freq-emoji">📦</div>
           <div>
             <div class="freq-name">${p.produto || p.id}</div>
-            <div class="freq-meta">
-              ${p.familia ? `<span>${p.familia}</span>` : ''}
-              ${p.embalagem ? ` · ${p.embalagem}` : ''}
-              ${p.kg ? ` · ${p.kg} kg` : ''}
-              ${p.notas ? ` · <em>${p.notas}</em>` : ''}
-            </div>
+            <div class="freq-meta">${meta}</div>
           </div>
-          <button class="btn-add-one" onclick="addFreqToCart('${p.id}')">+ Adicionar</button>
-        </div>`).join('')
+          <button class="btn-add-one" onclick="addFreqToCart('${safeId}')">+ Adicionar</button>
+        </div>`;
+      }).join('')
     : `<div class="empty"><div>⭐</div><div>Nenhum pedido frequente encontrado na aba <strong>${currentUser.sheetName}</strong>.</div></div>`;
 }
 
 function addAllFrequent() {
   if (!frequent.length) return;
   frequent.forEach(p => addFreqToCartSilent(p));
-  updateBadge();
-  renderCart();
+  updateBadge(); renderCart();
   notify(`✓ ${frequent.length} produto${frequent.length !== 1 ? 's adicionados' : ' adicionado'} ao carrinho`);
 }
 
@@ -679,32 +687,20 @@ function addFreqToCart(id) {
   const p = frequent.find(x => x.id === id);
   if (!p) return;
   addFreqToCartSilent(p);
-  updateBadge();
-  renderCart();
+  updateBadge(); renderCart();
   notify(`✓ ${p.produto || p.id} adicionado`);
 }
 
 function addFreqToCartSilent(p) {
+  const qty  = Number(p.qntSugerida) || 1;
   const item = cart.find(x => x.id === p.id);
-  if (item) item.qty += (Number(p.qntSugerida) || 1);
-  else cart.push({
-    id:        p.id,
-    nome:      p.produto || p.id,
-    familia:   p.familia,
-    embalagem: p.embalagem,
-    kg:        p.kg,
-    precoKg:   p.precoKg,
-    precoEmb:  p.precoEmb,
-    desconto:  p.desconto,
-    qty:       Number(p.qntSugerida) || 1,
-    origem:    'frequente',
-  });
+  if (item) item.qty += qty;
+  else cart.push({ id: p.id, nome: p.produto || p.id, embalagem: p.embalagem, kg: p.kg, qty, origem: 'frequente' });
 }
 
 // ══════════════════════════════════════════════════════════════
-//  PÁGINA: CATÁLOGO (Matriz DR)
+//  CATÁLOGO
 // ══════════════════════════════════════════════════════════════
-
 function renderCatalog() {
   const list = products.filter(p =>
     !query ||
@@ -722,14 +718,10 @@ function renderCatalog() {
         <div class="card">
           <div class="card-img">📦</div>
           <div class="card-body">
-            <div class="card-cat">${p.setor || 'Produto'}${p.equipe ? ' · ' + p.equipe : ''}</div>
+            <div class="card-cat">${p.setor || 'Produto'}${p.equipe ? ' · '+p.equipe : ''}</div>
             <div class="card-name">${p.nome}</div>
-            <div class="card-brand">Cód: ${p.codigo}${p.embalagem ? ' · ' + p.embalagem : ''}</div>
-            <div class="card-desc">
-              ${p.minVenda ? `Mín: ${p.minVenda} kg` : ''}
-              ${p.leadTime ? ` · Lead: ${p.leadTime}d` : ''}
-              ${p.ncm ? ` · NCM: ${p.ncm}` : ''}
-            </div>
+            <div class="card-brand">Cód: ${p.codigo}${p.embalagem ? ' · '+p.embalagem : ''}</div>
+            <div class="card-desc">${p.minVenda ? 'Mín: '+p.minVenda+' kg' : ''}${p.leadTime ? ' · Lead: '+p.leadTime+'d' : ''}${p.ncm ? ' · NCM: '+p.ncm : ''}</div>
           </div>
           <div class="card-footer">
             <button class="btn-add" onclick="addCatalogToCart('${p.codigo}')">🛒 Adicionar</button>
@@ -743,33 +735,20 @@ function addCatalogToCart(codigo) {
   if (!p) return;
   const item = cart.find(x => x.id === codigo);
   if (item) item.qty++;
-  else cart.push({
-    id:        p.codigo,
-    nome:      p.nome,
-    embalagem: p.embalagem,
-    kg:        p.minVenda,
-    precoKg:   p.preco,
-    precoEmb:  '',
-    desconto:  '',
-    qty:       1,
-    origem:    'catalogo',
-  });
-  updateBadge();
-  renderCart();
+  else cart.push({ id: p.codigo, nome: p.nome, embalagem: p.embalagem, kg: p.minVenda, qty: 1, origem: 'catalogo' });
+  updateBadge(); renderCart();
   notify(`✓ ${p.nome} adicionado`);
 }
 
 // ══════════════════════════════════════════════════════════════
-//  CARRINHO (compartilhado entre páginas)
+//  CARRINHO
 // ══════════════════════════════════════════════════════════════
-
 function changeQty(id, d) {
   const i = cart.findIndex(x => x.id === id);
   if (i < 0) return;
   cart[i].qty += d;
   if (cart[i].qty <= 0) cart.splice(i, 1);
-  updateBadge();
-  renderCart();
+  updateBadge(); renderCart();
 }
 
 function updateBadge() {
@@ -784,7 +763,9 @@ function renderCart() {
     total ? `${total} item${total !== 1 ? 's' : ''} no carrinho` : '';
   document.getElementById('checkoutBtn').disabled = !total;
   document.getElementById('cartItems').innerHTML = cart.length
-    ? cart.map(item => `
+    ? cart.map(item => {
+        const safeId = item.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `
         <div class="cart-item">
           <div class="item-emoji">📦</div>
           <div>
@@ -792,8 +773,73 @@ function renderCart() {
             <div class="item-sub">${item.embalagem || ''} · qtd: ${item.qty}</div>
           </div>
           <div class="qty-controls">
-            <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
+            <button class="qty-btn" onclick="changeQty('${safeId}', 1)">+</button>
             <span class="qty-val">${item.qty}</span>
-            <button class="qty-btn" onclick="changeQty('${item.id}', -1)">−</button>
+            <button class="qty-btn" onclick="changeQty('${safeId}', -1)">−</button>
           </div>
-        </div>`).join('')
+        </div>`;
+      }).join('')
+    : `<div class="cart-empty"><div>🛒</div><div>Carrinho vazio</div></div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CHECKOUT → N8N
+// ══════════════════════════════════════════════════════════════
+async function checkout() {
+  const btn = document.getElementById('checkoutBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Enviando...';
+  try {
+    const res = await fetch(N8N_WEBHOOK, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pedido_id:   `PED-${Date.now()}`,
+        data_hora:   new Date().toISOString(),
+        usuario:     currentUser.usuario,
+        cliente:     currentUser.nome,
+        aba_excel:   currentUser.sheetName,
+        total_itens: cart.reduce((s, x) => s + x.qty, 0),
+        itens: cart.map(({ id, nome, embalagem, kg, qty, origem }) =>
+          ({ codigo: id, nome, embalagem, kg, quantidade: qty, origem })
+        ),
+      })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    notify('🎉 Pedido enviado com sucesso!');
+    cart = [];
+    updateBadge(); renderCart(); toggleCart();
+  } catch(e) {
+    notify('❌ Erro ao enviar pedido. Tente novamente.');
+    btn.disabled = false;
+    btn.textContent = '💳 Finalizar Pedido';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════════════════════════════
+function toggleCart() { document.getElementById('overlay').classList.toggle('open'); }
+function closeCartOutside(e) { if (e.target === document.getElementById('overlay')) toggleCart(); }
+
+let notifTimer;
+function notify(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+document.getElementById('cartBtn').addEventListener('click', toggleCart);
+document.getElementById('search').addEventListener('input', e => {
+  query = e.target.value.toLowerCase().trim();
+  renderCatalog();
+});
+
+// Inicia
+init();
+
+</script>
+</body>
+</html>
